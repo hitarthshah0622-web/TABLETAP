@@ -1,0 +1,32 @@
+name: Build Tabletap
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - tabletap-source.zip
+      - .github/workflows/build.yml
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.16.0"
+      - name: Unpack full application
+        run: |
+          test -f tabletap-source.zip || { echo "Upload tabletap-source.zip at the repository root first."; exit 1; }
+          unzip -o tabletap-source.zip -d webapp
+      - name: Install dependencies
+        working-directory: webapp
+        run: npx --yes pnpm@11.19.0 install --frozen-lockfile
+      - name: Check types and core behavior
+        working-directory: webapp
+        run: |
+          npx --yes pnpm@11.19.0 typecheck
+          node scripts/test-core.mjs
+      - name: Production build
+        working-directory: webapp
+        run: npx --yes pnpm@11.19.0 build
